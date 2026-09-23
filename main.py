@@ -10,7 +10,7 @@ RED = "\033[91m"
 RESET = "\033[0m"
 
 # Replace this with your Cloudflare Worker URL.
-API_URL = "https://YOUR-WORKER.workers.dev"
+API_URL = "https://voidcore-ai.marexcartmsvc.workers.dev"
 
 PROVIDERS = {
     "OpenAI - GPT": [
