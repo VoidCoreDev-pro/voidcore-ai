@@ -124,7 +124,6 @@ Users do not need to provide their own API keys.
 
 The application connects to the VOIDCORE AI server, which securely manages API credentials and processes AI requests.
 
-The selectable profiles are interface presets powered by a shared Gemini backend. They do not provide direct access to the named providers' models.
 
 ## Security
 
