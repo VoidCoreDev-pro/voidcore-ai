@@ -116,7 +116,7 @@ py main.py
 | /clear  | Clear the terminal             |
 | /exit   | Close VOIDCORE AI              |
 
-## AI Infrastructure
+## AI
 
 VOIDCORE AI uses a centralized AI backend to process conversations.
 
