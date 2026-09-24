@@ -40,13 +40,52 @@ if os.name == "nt":
 # ==========================================
 
 MODELS = [
+    # OpenAI — GPT
     "GPT-5.6 Sol",
     "GPT-5.6 Luna",
-    "Astra X",
+    "GPT-5.6 Terra",
+    "GPT-6 Astra",
+
+    # Anthropic — Claude
+    "Claude Opus 4.6",
+    "Claude Sonnet 4.6",
+    "Claude Haiku 4.5",
+    "Claude Opus 5",
+    "Claude Sonnet 5",
+    "Claude Fable 5",
     "Claude Fable 5.1",
-    "Gemini 3.8",
-    "Grok",
-    "NovaAI"
+
+    # Google — Gemini
+    "Gemini 2.5 Pro",
+    "Gemini 2.5 Flash",
+    "Gemini 3 Pro",
+    "Gemini 3 Flash Preview",
+    "Gemini 3.1 Pro",
+    "Gemini 3.5 Pro",
+    "Gemini 3.8 Flash",
+    "Gemini 4 Ultra",
+
+    # xAI — Grok
+    "Grok 3",
+    "Grok 3 Mini",
+    "Grok 4",
+    "Grok 4 Heavy",
+    "Grok 4.6",
+    "Grok 5",
+
+    # DeepSeek
+    "DeepSeek V3",
+    "DeepSeek R1",
+    "DeepSeek V3.2",
+    "DeepSeek V4",
+    "DeepSeek V4 Pro",
+
+    # Alibaba — Qwen
+    "Qwen3 235B",
+    "Qwen3 Coder",
+    "Qwen3 Max",
+    "Qwen3.5 Plus",
+    "Qwen4 Ultra"
 ]
 
 selected_model = MODELS[0]
