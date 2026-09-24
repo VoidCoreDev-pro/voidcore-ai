@@ -4,27 +4,23 @@ import time
 import json
 import secrets
 import string
+import re
 import urllib.request
 import urllib.error
 
 # ==========================================
-# VOIDCORE AI - TERMINAL
+# VOIDCORE AI
 # ==========================================
 
-VERSION = "2.2"
+VERSION = "2.3"
 
 WORKER_URL = os.environ.get(
     "VOIDCORE_WORKER_URL",
     "https://voidcore-ai.marexcartmsvc.workers.dev"
 )
 
-# ==========================================
-# COLORS
-# ==========================================
-
 GREEN = "\033[92m"
 RED = "\033[91m"
-YELLOW = "\033[93m"
 CYAN = "\033[96m"
 GRAY = "\033[90m"
 RESET = "\033[0m"
@@ -100,15 +96,10 @@ EFFORT_LEVELS = {
 }
 
 effort = "instant"
-
-# ==========================================
-# HISTORY
-# ==========================================
-
 history = []
 
 # ==========================================
-# LOCAL IDENTIFIER GENERATOR
+# LOCAL IDENTIFIER
 # ==========================================
 
 def generate_api_key():
@@ -117,7 +108,6 @@ def generate_api_key():
     part1 = "".join(
         secrets.choice(chars) for _ in range(20)
     )
-
     part2 = "".join(
         secrets.choice(chars) for _ in range(8)
     )
@@ -126,7 +116,6 @@ def generate_api_key():
 
     print()
     print(GREEN + "Generating identifier... [OK]" + RESET)
-    print()
     print("Model: " + selected_model)
     print("Identifier: " + identifier)
     print()
@@ -158,8 +147,8 @@ def change_model(value):
     try:
         index = int(value) - 1
 
-        if index < 0 or index >= len(MODELS):
-            raise ValueError()
+        if not 0 <= index < len(MODELS):
+            raise ValueError
 
         selected_model = MODELS[index]
 
@@ -176,9 +165,7 @@ def change_model(value):
         selected_model = matches[0]
 
     print()
-    print(
-        GREEN + f"[OK] {selected_model} selected." + RESET
-    )
+    print(GREEN + f"[OK] {selected_model} selected." + RESET)
     print()
 
 
@@ -213,67 +200,87 @@ def change_effort(value):
         return
 
     effort = value
-
     print()
-    print(
-        GREEN + f"[OK] Effort set to {effort.upper()}" + RESET
-    )
+    print(GREEN + f"[OK] Effort set to {effort.upper()}" + RESET)
     print()
 
 
 # ==========================================
-# NATURAL RESPONSE
+# NATURAL RESPONSES
 # ==========================================
 
 NATURAL_INSTRUCTION = (
-    "Answer the user's message naturally and directly, "
-    "like a normal AI chat assistant. Match the user's language. "
-    "Do not roleplay as a terminal, operator, or computer system. "
-    "Do not include transmission logs, status messages, "
-    "decorative headers, or a VOIDCORE introduction."
+    "Respond to the user's actual message as a normal, helpful "
+    "chat assistant. Match the user's language. Answer directly. "
+    "Do not act as a terminal, computer interface, or operator. "
+    "Never begin with a session announcement, startup message, "
+    "transmission log, status report, or VOIDCORE introduction. "
+    "For a greeting such as 'hello', simply greet the user back."
+)
+
+# Only remove recognizable terminal-style text at the START
+# of the response. Do not alter normal content later in it.
+TERMINAL_PREFIXES = (
+    "VOIDCORE //",
+    "VOIDCORE TERMINAL",
+    "VOIDCORE INTERFACE",
+    "TERMINAL INTERFACE ACTIVE",
+    "AWAITING INPUT",
+    "AWAITING COMMAND",
+    "INBOUND TRANSMISSION",
+    "USER_IDENTIFIED:",
+    "STATUS:",
+    "SESSION START",
+    "SYSTEM ONLINE",
+    "OPERATOR IDENTIFIED",
+    "GREETING, OPERATOR",
+    "GREETINGS, OPERATOR",
 )
 
 
-def clean_response(answer):
-    """Remove a terminal-style preamble, if present."""
-    lines = answer.splitlines()
-    cleaned = []
-    in_preamble = True
-
-    terminal_prefixes = (
-        "VOIDCORE TERMINAL",
-        "> INBOUND TRANSMISSION",
-        "> STATUS:",
-        "> USER_IDENTIFIED:",
+def is_terminal_preamble(line):
+    text = line.strip().lstrip(">").strip().upper()
+    return any(
+        text.startswith(prefix)
+        for prefix in TERMINAL_PREFIXES
     )
 
-    for line in lines:
-        stripped = line.strip()
 
-        if in_preamble and (
-            not stripped
-            or stripped.upper().startswith(terminal_prefixes)
-        ):
+def clean_response(answer):
+    lines = answer.strip().splitlines()
+    first_content = 0
+
+    while first_content < len(lines):
+        line = lines[first_content].strip()
+
+        if not line or is_terminal_preamble(line):
+            first_content += 1
             continue
 
-        in_preamble = False
-        cleaned.append(line)
+        break
 
-    return "\n".join(cleaned).strip()
+    cleaned = "\n".join(lines[first_content:]).strip()
+
+    # Remove a leading standalone separator left by the preamble.
+    cleaned = re.sub(
+        r"^(?:[-=]{3,})\s*\n",
+        "",
+        cleaned
+    ).strip()
+
+    return cleaned
 
 
 # ==========================================
 # AI REQUEST
 # ==========================================
 
-def ask_ai(message):
-    global history
-
+def request_ai(message, conversation_history):
     payload = {
         "message": message,
         "model": selected_model,
         "effort": effort,
-        "history": history[-20:],
+        "history": conversation_history[-20:],
         "systemInstruction": NATURAL_INSTRUCTION
     }
 
@@ -290,35 +297,59 @@ def ask_ai(message):
         method="POST"
     )
 
-    try:
-        with urllib.request.urlopen(
-            request,
-            timeout=120
-        ) as response:
-            result = json.loads(
-                response.read().decode("utf-8")
-            )
-
-        answer = (
-            result.get("reply")
-            or result.get("response")
-            or result.get("answer")
-            or result.get("text")
+    with urllib.request.urlopen(
+        request,
+        timeout=120
+    ) as response:
+        result = json.loads(
+            response.read().decode("utf-8")
         )
 
-        if not isinstance(answer, str) or not answer.strip():
-            return "Error: Empty AI response."
+    answer = (
+        result.get("reply")
+        or result.get("response")
+        or result.get("answer")
+        or result.get("text")
+    )
 
-        answer = clean_response(answer)
+    if not isinstance(answer, str) or not answer.strip():
+        return "Error: Empty AI response."
+
+    return answer
+
+
+def ask_ai(message):
+    global history
+
+    try:
+        raw_answer = request_ai(message, history)
+        answer = clean_response(raw_answer)
+
+        # If the response contained ONLY a terminal preamble,
+        # ask for a normal answer once more.
+        if not answer and raw_answer.strip():
+            retry_message = (
+                NATURAL_INSTRUCTION
+                + "\n\nRespond naturally to this user message:\n"
+                + message
+            )
+
+            raw_answer = request_ai(
+                retry_message,
+                history
+            )
+            answer = clean_response(raw_answer)
 
         if not answer:
             return "Error: Empty AI response."
+
+        if answer.startswith("Error:"):
+            return answer
 
         history.append({
             "role": "user",
             "content": message
         })
-
         history.append({
             "role": "assistant",
             "content": answer
@@ -345,12 +376,11 @@ def ask_ai(message):
 
 
 # ==========================================
-# THINKING DISPLAY
+# RESPONSE DISPLAY
 # ==========================================
 
 def generate_response(message):
     print()
-
     start = time.perf_counter()
 
     print(
@@ -373,11 +403,8 @@ def generate_response(message):
     print(
         GRAY + f"Completed in {elapsed:.1f}s" + RESET
     )
-
     print()
-    print(
-        GREEN + selected_model + " > " + RESET + answer
-    )
+    print(GREEN + selected_model + " > " + RESET + answer)
     print()
 
 
