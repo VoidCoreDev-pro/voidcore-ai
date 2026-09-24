@@ -17,7 +17,7 @@ VERSION = "2.0"
 # Ovde upisi adresu svog Cloudflare Worker-a.
 WORKER_URL = os.environ.get(
     "VOIDCORE_WORKER_URL",
-    "https://YOUR-WORKER.workers.dev"
+    "https://voidcore-ai.marexcartmsvc.workers.dev"
 )
 
 # ==========================================
