@@ -11,7 +11,7 @@ import urllib.error
 # VOIDCORE AI - TERMINAL
 # ==========================================
 
-VERSION = "2.1"
+VERSION = "2.2"
 
 WORKER_URL = os.environ.get(
     "VOIDCORE_WORKER_URL",
@@ -222,6 +222,47 @@ def change_effort(value):
 
 
 # ==========================================
+# NATURAL RESPONSE
+# ==========================================
+
+NATURAL_INSTRUCTION = (
+    "Answer the user's message naturally and directly, "
+    "like a normal AI chat assistant. Match the user's language. "
+    "Do not roleplay as a terminal, operator, or computer system. "
+    "Do not include transmission logs, status messages, "
+    "decorative headers, or a VOIDCORE introduction."
+)
+
+
+def clean_response(answer):
+    """Remove a terminal-style preamble, if present."""
+    lines = answer.splitlines()
+    cleaned = []
+    in_preamble = True
+
+    terminal_prefixes = (
+        "VOIDCORE TERMINAL",
+        "> INBOUND TRANSMISSION",
+        "> STATUS:",
+        "> USER_IDENTIFIED:",
+    )
+
+    for line in lines:
+        stripped = line.strip()
+
+        if in_preamble and (
+            not stripped
+            or stripped.upper().startswith(terminal_prefixes)
+        ):
+            continue
+
+        in_preamble = False
+        cleaned.append(line)
+
+    return "\n".join(cleaned).strip()
+
+
+# ==========================================
 # AI REQUEST
 # ==========================================
 
@@ -232,7 +273,8 @@ def ask_ai(message):
         "message": message,
         "model": selected_model,
         "effort": effort,
-        "history": history[-20:]
+        "history": history[-20:],
+        "systemInstruction": NATURAL_INSTRUCTION
     }
 
     data = json.dumps(payload).encode("utf-8")
@@ -263,6 +305,11 @@ def ask_ai(message):
             or result.get("answer")
             or result.get("text")
         )
+
+        if not isinstance(answer, str) or not answer.strip():
+            return "Error: Empty AI response."
+
+        answer = clean_response(answer)
 
         if not answer:
             return "Error: Empty AI response."
