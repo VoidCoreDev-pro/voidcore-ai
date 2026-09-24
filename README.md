@@ -25,8 +25,6 @@ Experience real-time AI conversations, a premium terminal design, animated start
 * GPT-5.6 Sol
 * GPT-5.6 Luna
 * GPT-5.6 Terra
-* GPT-5.6 Pro
-* GPT-6
 * GPT-6 Astra
 * GPT-6 Reason
 * GPT-6 Ultra
@@ -40,7 +38,6 @@ Experience real-time AI conversations, a premium terminal design, animated start
 * Claude Sonnet 5
 * Claude Fable 5
 * Claude Fable 5.1
-* Claude Sunset 5
 
 ### Google — Gemini
 
