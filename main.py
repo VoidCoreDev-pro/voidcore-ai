@@ -1,6 +1,5 @@
 
 import os
-import sys
 import time
 import json
 import secrets
@@ -14,7 +13,9 @@ import urllib.error
 
 VERSION = "2.0"
 
-# Ovde upisi adresu svog Cloudflare Worker-a.
+# Adresa tvog Cloudflare Worker-a.
+# Ako postoji VOIDCORE_WORKER_URL u sistemu,
+# njegova vrednost ima prednost.
 WORKER_URL = os.environ.get(
     "VOIDCORE_WORKER_URL",
     "https://voidcore-ai.marexcartmsvc.workers.dev"
@@ -29,14 +30,13 @@ RED = "\033[91m"
 YELLOW = "\033[93m"
 CYAN = "\033[96m"
 GRAY = "\033[90m"
-WHITE = "\033[97m"
 RESET = "\033[0m"
 
 if os.name == "nt":
     os.system("")
 
 # ==========================================
-# MODELS
+# MODELS - NEPROMENJENO
 # ==========================================
 
 MODELS = [
@@ -111,7 +111,7 @@ effort = "instant"
 history = []
 
 # ==========================================
-# API IDENTIFIER GENERATOR
+# LOCAL IDENTIFIER GENERATOR
 # ==========================================
 
 def generate_api_key():
@@ -125,18 +125,13 @@ def generate_api_key():
         secrets.choice(chars) for _ in range(8)
     )
 
-    key = f"OU.{part1}-{part2}"
+    identifier = f"OU.{part1}-{part2}"
 
     print()
-    print(
-        GREEN +
-        "Generating API key... [OK]" +
-        RESET
-    )
-
+    print(GREEN + "Generating identifier... [OK]" + RESET)
     print()
     print("Model: " + selected_model)
-    print("API Key: " + key)
+    print("Identifier: " + identifier)
     print()
 
 
@@ -185,9 +180,7 @@ def change_model(value):
 
     print()
     print(
-        GREEN +
-        f"[OK] {selected_model} selected." +
-        RESET
+        GREEN + f"[OK] {selected_model} selected." + RESET
     )
     print()
 
@@ -226,9 +219,7 @@ def change_effort(value):
 
     print()
     print(
-        GREEN +
-        f"[OK] Effort set to {effort.upper()}" +
-        RESET
+        GREEN + f"[OK] Effort set to {effort.upper()}" + RESET
     )
     print()
 
@@ -239,12 +230,6 @@ def change_effort(value):
 
 def ask_ai(message):
     global history
-
-    if "YOUR-WORKER" in WORKER_URL:
-        return (
-            "Connection error: Configure "
-            "VOIDCORE_WORKER_URL first."
-        )
 
     payload = {
         "message": message,
@@ -269,7 +254,6 @@ def ask_ai(message):
             request,
             timeout=120
         ) as response:
-
             result = json.loads(
                 response.read().decode("utf-8")
             )
@@ -297,7 +281,15 @@ def ask_ai(message):
         return answer
 
     except urllib.error.HTTPError as error:
-        return f"Connection error: HTTP {error.code}"
+        details = error.read().decode(
+            "utf-8",
+            errors="replace"
+        )
+
+        return (
+            f"Connection error: HTTP {error.code}\n"
+            f"{details[:1000]}"
+        )
 
     except urllib.error.URLError as error:
         return f"Connection error: {error.reason}"
@@ -316,15 +308,12 @@ def generate_response(message):
     start = time.perf_counter()
 
     print(
-        GRAY +
-        f"Thinking [{effort.upper()}]..." +
-        RESET
+        GRAY + f"Thinking [{effort.upper()}]..." + RESET
     )
 
     answer = ask_ai(message)
 
     elapsed = time.perf_counter() - start
-
     minimum = EFFORT_LEVELS[effort]
 
     if (
@@ -336,18 +325,12 @@ def generate_response(message):
     elapsed = time.perf_counter() - start
 
     print(
-        GRAY +
-        f"Completed in {elapsed:.1f}s" +
-        RESET
+        GRAY + f"Completed in {elapsed:.1f}s" + RESET
     )
 
     print()
     print(
-        GREEN +
-        selected_model +
-        " > " +
-        RESET +
-        answer
+        GREEN + selected_model + " > " + RESET + answer
     )
     print()
 
@@ -372,7 +355,6 @@ def show_help():
     print("/reset           Clear conversation history")
     print("/help            Show commands")
     print("/exit            Exit terminal")
-
     print()
 
 
@@ -386,17 +368,7 @@ def show_about():
     print(f"Version: {VERSION}")
     print(f"Selected profile: {selected_model}")
     print(f"Effort: {effort.upper()}")
-
-    print(
-        "AI provider: Configured through "
-        "Cloudflare Worker"
-    )
-
-    print(
-        "API identifiers generated locally "
-        "do not authenticate to AI services."
-    )
-
+    print("AI connection: Cloudflare Worker")
     print()
 
 
@@ -408,41 +380,28 @@ def startup():
     print()
     print(GREEN + "VOIDCORE AI" + RESET)
     print("=" * 40)
-
     print("Type /help for available commands.")
     print()
 
     time.sleep(0.3)
-
     print(
-        GREEN +
-        "Initializing VOIDCORE AI... [OK]" +
-        RESET
+        GREEN + "Initializing VOIDCORE AI... [OK]" + RESET
     )
 
     time.sleep(0.3)
-
     print(
-        GREEN +
-        "Loading AI profiles... [OK]" +
-        RESET
+        GREEN + "Loading AI profiles... [OK]" + RESET
     )
 
     time.sleep(0.3)
-
     print(
-        GREEN +
-        "Loading terminal... [OK]" +
-        RESET
+        GREEN + "Loading terminal... [OK]" + RESET
     )
 
     print()
     print(
-        GREEN +
-        f"[OK] {selected_model} selected." +
-        RESET
+        GREEN + f"[OK] {selected_model} selected." + RESET
     )
-
     print()
 
 
@@ -456,7 +415,6 @@ def main():
     startup()
 
     while True:
-
         try:
             message = input(
                 GREEN + "You > " + RESET
@@ -470,7 +428,6 @@ def main():
             continue
 
         parts = message.split(maxsplit=1)
-
         command = parts[0].lower()
 
         value = (
@@ -479,51 +436,39 @@ def main():
             else ""
         )
 
-        # API identifier command
         if command in ("api", "/api"):
             generate_api_key()
 
-        # Model commands
         elif command in ("/models", "models"):
             show_models()
 
         elif command in ("/model", "model"):
             change_model(value)
 
-        # Effort commands
         elif command in ("/effort", "effort"):
             change_effort(value)
 
-        # About
         elif command in ("/about", "about"):
             show_about()
 
-        # Help
         elif command in ("/help", "help"):
             show_help()
 
-        # Clear screen
         elif command in ("/clear", "clear"):
             os.system(
                 "cls" if os.name == "nt" else "clear"
             )
 
-        # Reset conversation
         elif command in ("/reset", "reset"):
             history = []
-
             print(
-                GREEN +
-                "[OK] Conversation reset." +
-                RESET
+                GREEN + "[OK] Conversation reset." + RESET
             )
 
-        # Exit
         elif command in ("/exit", "exit", "quit"):
             print("\nExiting VOIDCORE AI...")
             break
 
-        # Normal AI message
         else:
             generate_response(message)
 
