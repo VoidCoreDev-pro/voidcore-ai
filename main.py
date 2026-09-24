@@ -11,11 +11,8 @@ import urllib.error
 # VOIDCORE AI - TERMINAL
 # ==========================================
 
-VERSION = "2.0"
+VERSION = "2.1"
 
-# Adresa tvog Cloudflare Worker-a.
-# Ako postoji VOIDCORE_WORKER_URL u sistemu,
-# njegova vrednost ima prednost.
 WORKER_URL = os.environ.get(
     "VOIDCORE_WORKER_URL",
     "https://voidcore-ai.marexcartmsvc.workers.dev"
@@ -244,7 +241,9 @@ def ask_ai(message):
         WORKER_URL,
         data=data,
         headers={
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "User-Agent": "curl/8.0.0",
+            "Accept": "*/*"
         },
         method="POST"
     )
