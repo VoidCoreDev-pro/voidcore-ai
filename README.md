@@ -134,3 +134,10 @@ The backend uses request limits to protect the service from excessive usage.
 ---
 
 **VOIDCORE AI — One Terminal. 40 AI Profiles.**
+
+
+## Updated terminal
+`/effort instant|medium|xhigh|max|ultra` changes the request's Gemini thinking budget for non-instant levels and adds a clearly labeled minimum UI wait. Real model capabilities and latency depend on the backend. `/about` reports the real backend. Redeploy `worker/index.js` using your existing Cloudflare setup for server changes to take effect. No API keys are included.
+
+## Local display keys
+`/api` generates a fresh random local identifier for the selected profile. It is not an API credential and does not unlock models or grant unlimited service access. The actual backend credentials stay on the server.
